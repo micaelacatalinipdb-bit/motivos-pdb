@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#0E2A3A">
+<title>Motivos de no compra</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+:root{
+  --navy:#0E2A3A; --teal:#0F7A78; --celeste:#3FA9DC; --ambar:#C8781A; --rojo:#B4462F;
+  --papel:#FFFFFF; --linea:#DCE3E7; --gris:#6B7C87; --fondo:#F2F5F6;
+  --alto-barra:118px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  background:var(--fondo);color:var(--navy);font-size:16px;line-height:1.35;
+  -webkit-font-smoothing:antialiased;overscroll-behavior-y:contain}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+.num{font-variant-numeric:tabular-nums}
+
+.barra{position:fixed;top:0;left:0;right:0;z-index:40;background:var(--navy);color:#fff;
+  padding:calc(env(safe-area-inset-top) + 12px) 16px 0}
+.barra-fila{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.vendedor{font-size:17px;font-weight:600;letter-spacing:-.01em}
+.periodo{font-size:13px;color:#9DB6C4}
+.contador{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.contador small{font-size:14px;font-weight:500;color:#9DB6C4}
+.progreso{height:5px;background:#22485C;border-radius:3px;margin:10px 0 0;overflow:hidden}
+.progreso i{display:block;height:100%;background:var(--celeste);width:0;transition:width .3s ease}
+.solapas{display:flex;gap:4px;margin-top:10px}
+.solapa{flex:1;padding:11px 8px;font-size:14px;font-weight:600;color:#9DB6C4;
+  border-bottom:3px solid transparent;text-align:center}
+.solapa[aria-selected="true"]{color:#fff;border-bottom-color:var(--celeste)}
+
+.estado-conexion{position:fixed;left:16px;right:16px;z-index:45;
+  bottom:calc(env(safe-area-inset-bottom) + 86px);padding:12px 16px;border-radius:10px;
+  font-size:14px;font-weight:600;text-align:center;color:#fff;
+  box-shadow:0 6px 22px rgba(14,42,58,.28);display:none}
+.estado-conexion.ver{display:block}
+.estado-conexion.offline{background:var(--ambar)}
+.estado-conexion.ok{background:var(--teal)}
+
+main{padding:var(--alto-barra) 0 104px}
+.grupo{padding:22px 16px 8px}
+.grupo b{display:block;font-size:14px;font-weight:700;letter-spacing:.01em}
+.grupo span{font-size:12.5px;color:var(--gris)}
+.punto{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:1px}
+.p-riesgo{background:var(--ambar)} .p-caido{background:var(--rojo)} .p-sin{background:var(--gris)}
+
+.fila{display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+  background:var(--papel);padding:13px 16px;border-bottom:1px solid var(--linea);min-height:70px}
+.fila:active{background:#EAF3F8}
+.fila-datos{flex:1;min-width:0}
+.cliente{font-size:16px;font-weight:600;letter-spacing:-.01em;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.meta{font-size:13px;color:var(--gris);margin-top:3px;display:flex;align-items:center;
+  gap:8px;overflow:hidden;white-space:nowrap}
+.meta em{font-style:normal;overflow:hidden;text-overflow:ellipsis}
+.sub{font-size:11px;font-weight:700;padding:2px 6px;border-radius:3px;flex-shrink:0;
+  background:#E6EEF2;color:var(--navy);max-width:130px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.chip{flex-shrink:0;max-width:42%;padding:8px 12px;border-radius:999px;font-size:13px;
+  font-weight:600;line-height:1.2;background:var(--teal);color:#fff;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip.vacio{background:none;color:var(--gris);border:1.5px dashed var(--linea);font-weight:500}
+.tilde{width:24px;height:24px;flex-shrink:0;border:2px solid var(--linea);border-radius:6px}
+.fila[aria-checked="true"] .tilde{background:var(--celeste);border-color:var(--celeste)}
+.fila[aria-checked="true"] .tilde::after{content:"";display:block;width:6px;height:11px;
+  margin:2px auto 0;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.fila[aria-checked="true"]{background:#EAF3F8}
+
+.vacio-total{padding:64px 32px;text-align:center;color:var(--gris)}
+.vacio-total b{display:block;font-size:19px;color:var(--navy);margin-bottom:6px}
+
+.pie{position:fixed;left:0;right:0;bottom:0;z-index:38;
+  padding:12px 16px calc(env(safe-area-inset-bottom) + 12px);
+  background:var(--papel);border-top:1px solid var(--linea);display:flex;gap:10px}
+.pie button{flex:1;padding:15px;border-radius:10px;font-size:16px;font-weight:600;
+  background:var(--fondo);color:var(--navy)}
+.pie button.fuerte{background:var(--celeste);color:#fff}
+.pie button:disabled{opacity:.4}
+
+.telon{position:fixed;inset:0;z-index:50;background:rgba(14,42,58,.55);
+  opacity:0;pointer-events:none;transition:opacity .2s ease}
+.telon.abierto{opacity:1;pointer-events:auto}
+.panel{position:fixed;left:0;right:0;bottom:0;z-index:51;background:var(--papel);
+  border-radius:18px 18px 0 0;padding:8px 16px calc(env(safe-area-inset-bottom) + 20px);
+  max-height:88vh;overflow-y:auto;transform:translateY(100%);
+  transition:transform .24s cubic-bezier(.2,.8,.3,1)}
+.panel.abierto{transform:translateY(0)}
+.agarre{width:38px;height:4px;background:var(--linea);border-radius:2px;margin:6px auto 14px}
+.panel h2{font-size:19px;font-weight:600;margin:0;letter-spacing:-.01em}
+.ficha{font-size:13.5px;color:var(--gris);margin:6px 0 16px;line-height:1.5}
+.ficha b{color:var(--navy);font-weight:600}
+.repetir{width:100%;padding:14px;border-radius:10px;margin-bottom:16px;background:#EAF3F8;
+  border:1.5px solid var(--celeste);font-size:15px;font-weight:600;color:var(--navy);text-align:left}
+.repetir span{display:block;font-size:13px;font-weight:500;color:var(--gris);margin-top:2px}
+.grilla{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.motivo{padding:16px 12px;border-radius:10px;background:var(--fondo);border:1.5px solid transparent;
+  font-size:15px;font-weight:600;text-align:left;line-height:1.25;min-height:64px}
+.motivo[aria-pressed="true"]{background:var(--teal);color:#fff}
+.motivo.ancho{grid-column:1/-1}
+textarea{width:100%;margin-top:12px;padding:13px;border-radius:10px;border:1.5px solid var(--linea);
+  font:inherit;font-size:16px;resize:none}
+.guardar{width:100%;margin-top:12px;padding:16px;border-radius:10px;background:var(--celeste);
+  color:#fff;font-size:16px;font-weight:600}
+.guardar:disabled{opacity:.4}
+.volver{width:100%;margin-top:14px;padding:13px;font-size:14px;font-weight:600;color:var(--gris)}
+
+.aviso{padding:80px 28px;text-align:center}
+.aviso h1{font-size:22px;margin:0 0 10px;letter-spacing:-.02em}
+.aviso p{color:var(--gris);font-size:15px;margin:0;line-height:1.5}
+
+@media (prefers-reduced-motion:reduce){*{transition:none !important}}
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+<div class="estado-conexion" id="estado"></div>
+<div class="telon" id="telon"></div>
+<div class="panel" id="panel" role="dialog" aria-modal="true"></div>
+
+<script>
+/* ================================================================
+   CONFIGURACION - reemplazar estos dos valores
+   Supabase > Project Settings > API
+   ================================================================ */
+const SUPABASE_URL = "https://TU-PROYECTO.supabase.co";
+const SUPABASE_KEY = "TU-CLAVE-ANON-PUBLICA";
+/* ============================================================== */
+
+// Texto de ayuda que aparece abajo del titulo de cada grupo.
+const AYUDA_ESTADO = {
+  "En riesgo":          "Compró en julio pero no en agosto. Son los más recuperables.",
+  "Caído":              "Compraba antes, no compró ni en julio ni en agosto.",
+  "Sin actividad 2026": "No compró ningún mes del año.",
+};
+const CLASE_ESTADO = {
+  "En riesgo": "p-riesgo", "Caído": "p-caido", "Sin actividad 2026": "p-sin",
+};
+
+const $ = s => document.querySelector(s);
+const app = $("#app"), telon = $("#telon"), panel = $("#panel"), avisoCx = $("#estado");
+
+let TOKEN = null, datos = null, cola = [];
+let solapa = "pendientes", modoSeleccion = false, seleccion = new Set(), abierto = null;
+
+const clave = k => "mnc_" + k + "_" + TOKEN;
+const idc = c => c.cliente_codigo;
+const esc = s => String(s ?? "").replace(/[&<>"']/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const motivo = id => id ? datos.motivos.find(m => m.id === id) : null;
+const buscar = cod => datos.clientes.find(c => c.cliente_codigo === cod);
+
+/* ---------- Arranque ---------- */
+function arrancar(){
+  const url = new URLSearchParams(location.search).get("t");
+  TOKEN = url || localStorage.getItem("mnc_token");
+  if(url) localStorage.setItem("mnc_token", url);
+
+  if(!TOKEN){
+    app.innerHTML = `<div class="aviso"><h1>Abrí tu link personal</h1>
+      <p>Cada vendedor tiene su propio link. Buscalo en el mensaje que te mandaron y abrilo desde ahí. Después te queda guardado.</p></div>`;
+    return;
+  }
+
+  const cache = localStorage.getItem(clave("datos"));
+  if(cache) datos = JSON.parse(cache);
+  cola = JSON.parse(localStorage.getItem(clave("cola")) || "[]");
+  aplicarCola();
+  pintar();
+  traer();
+
+  window.addEventListener("online", sincronizar);
+  document.addEventListener("visibilitychange", () => { if(!document.hidden) sincronizar(); });
+}
+
+async function rpc(fn, cuerpo){
+  const r = await fetch(SUPABASE_URL + "/rest/v1/rpc/" + fn, {
+    method:"POST",
+    headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,
+             "Authorization":"Bearer " + SUPABASE_KEY},
+    body: JSON.stringify(cuerpo)
+  });
+  if(!r.ok) throw new Error("http " + r.status);
+  return r.json();
+}
+
+async function traer(){
+  try{
+    const d = await rpc("app_cartera", {p_token: TOKEN});
+    if(d.error === "token_invalido"){
+      app.innerHTML = `<div class="aviso"><h1>Link vencido</h1>
+        <p>Este link ya no está habilitado. Pedile uno nuevo a tu supervisor.</p></div>`;
+      return;
+    }
+    datos = d;
+    localStorage.setItem(clave("datos"), JSON.stringify(d));
+    aplicarCola(); pintar(); sincronizar();
+  }catch(e){
+    if(!datos) app.innerHTML = `<div class="aviso"><h1>Sin conexión</h1>
+      <p>No pudimos traer tu lista. Conectate a datos o wifi una vez y después podés seguir sin señal.</p></div>`;
+    estado("offline");
+  }
+}
+
+function aplicarCola(){
+  if(!datos) return;
+  const mapa = {};
+  cola.forEach(i => mapa[i.cliente_codigo] = i);
+  datos.clientes.forEach(c => {
+    const p = mapa[idc(c)];
+    if(p){ c.motivo_id = p.motivo_id; c.detalle = p.detalle; }
+  });
+}
+
+async function sincronizar(){
+  if(!cola.length || !navigator.onLine) return;
+  const lote = cola.slice();
+  try{
+    const r = await rpc("app_guardar", {p_token: TOKEN, p_items: lote});
+    if(r.error) throw new Error(r.error);
+    cola = cola.filter(i => !lote.includes(i));
+    localStorage.setItem(clave("cola"), JSON.stringify(cola));
+    estado("ok"); pintar();
+  }catch(e){ estado("offline"); }
+}
+
+function encolar(items){
+  items.forEach(n => {
+    cola = cola.filter(i => i.cliente_codigo !== n.cliente_codigo);
+    cola.push(n);
+  });
+  localStorage.setItem(clave("cola"), JSON.stringify(cola));
+  aplicarCola();
+  localStorage.setItem(clave("datos"), JSON.stringify(datos));
+  pintar(); sincronizar();
+}
+
+let temporizador;
+function estado(tipo){
+  clearTimeout(temporizador);
+  if(tipo === "offline"){
+    avisoCx.className = "estado-conexion offline ver";
+    avisoCx.textContent = cola.length
+      ? `Sin conexión. ${cola.length} sin enviar, se mandan solos`
+      : "Sin conexión. Podés seguir cargando";
+  }else{
+    avisoCx.className = "estado-conexion ok ver";
+    avisoCx.textContent = "Todo guardado";
+    temporizador = setTimeout(() => avisoCx.classList.remove("ver"), 2200);
+  }
+}
+
+/* ---------- Pintado ---------- */
+function pintar(){
+  if(!datos){ app.innerHTML = `<div class="aviso"><h1>Cargando</h1></div>`; return; }
+  if(!datos.periodo){
+    app.innerHTML = `<div class="aviso"><h1>Todavía no hay lista</h1>
+      <p>Cuando carguen los clientes del mes te van a aparecer acá.</p></div>`;
+    return;
+  }
+
+  const total = datos.clientes.length;
+  const hechos = datos.clientes.filter(c => c.motivo_id).length;
+  const lista = datos.clientes.filter(c => solapa === "pendientes" ? !c.motivo_id : !!c.motivo_id);
+
+  let h = `<div class="barra">
+    <div class="barra-fila">
+      <div><div class="vendedor">${esc(datos.vendedor.nombre)}</div>
+           <div class="periodo">No compraron en el período ${esc(datos.periodo)}</div></div>
+      <div class="contador num">${hechos}<small>/${total}</small></div>
+    </div>
+    <div class="progreso"><i style="width:${total ? hechos/total*100 : 0}%"></i></div>
+    <div class="solapas" role="tablist">
+      <button class="solapa" role="tab" aria-selected="${solapa==='pendientes'}"
+              onclick="cambiarSolapa('pendientes')">Faltan ${total-hechos}</button>
+      <button class="solapa" role="tab" aria-selected="${solapa==='cargados'}"
+              onclick="cambiarSolapa('cargados')">Cargados ${hechos}</button>
+    </div></div><main>`;
+
+  if(!lista.length){
+    h += solapa === "pendientes"
+      ? `<div class="vacio-total"><b>Terminaste</b>Cargaste los ${total} clientes del período.</div>`
+      : `<div class="vacio-total"><b>Nada cargado todavía</b>Empezá por la solapa de al lado.</div>`;
+  }else{
+    let est = null;
+    lista.forEach(c => {
+      if(c.estado !== est){
+        est = c.estado;
+        const n = lista.filter(x => x.estado === est).length;
+        h += `<div class="grupo">
+          <b><i class="punto ${CLASE_ESTADO[est] || 'p-sin'}"></i>${esc(est)} (${n})</b>
+          <span>${esc(AYUDA_ESTADO[est] || "")}</span></div>`;
+      }
+      const m = motivo(c.motivo_id);
+      h += `<button class="fila" aria-checked="${seleccion.has(idc(c))}"
+                    onclick="tocar('${esc(c.cliente_codigo)}')">
+        ${modoSeleccion ? '<span class="tilde"></span>' : ''}
+        <span class="fila-datos">
+          <span class="cliente">${esc(c.cliente_nombre)}</span>
+          <span class="meta">
+            ${c.subcanal ? `<span class="sub">${esc(c.subcanal)}</span>` : ''}
+            <em>${esc(c.direccion || "")}</em>
+          </span>
+        </span>
+        <span class="chip ${m ? '' : 'vacio'}">${m ? esc(m.etiqueta) : 'Elegir motivo'}</span>
+      </button>`;
+    });
+  }
+  h += `</main>`;
+
+  if(modoSeleccion){
+    h += `<div class="pie">
+      <button onclick="salirSeleccion()">Cancelar</button>
+      <button class="fuerte" ${seleccion.size ? '' : 'disabled'}
+              onclick="abrirPanelLote()">Asignar a ${seleccion.size}</button></div>`;
+  }else if(lista.length){
+    h += `<div class="pie"><button onclick="entrarSeleccion()">Marcar varios juntos</button></div>`;
+  }
+
+  app.innerHTML = h;
+  requestAnimationFrame(() => {
+    const b = document.querySelector(".barra");
+    if(b) document.documentElement.style.setProperty("--alto-barra", b.offsetHeight + "px");
+  });
+  if(cola.length && !navigator.onLine) estado("offline");
+}
+
+function cambiarSolapa(s){ solapa = s; salirSeleccion(); }
+function entrarSeleccion(){ modoSeleccion = true; seleccion.clear(); pintar(); }
+function salirSeleccion(){ modoSeleccion = false; seleccion.clear(); pintar(); }
+
+function tocar(cod){
+  const c = buscar(cod);
+  if(modoSeleccion){
+    seleccion.has(cod) ? seleccion.delete(cod) : seleccion.add(cod);
+    pintar();
+  }else abrirPanel([c]);
+}
+
+function abrirPanelLote(){
+  const cs = datos.clientes.filter(c => seleccion.has(idc(c)));
+  if(cs.length) abrirPanel(cs);
+}
+
+function abrirPanel(cs){
+  abierto = cs;
+  const uno = cs.length === 1 ? cs[0] : null;
+  const ant = uno && uno.motivo_anterior ? motivo(uno.motivo_anterior) : null;
+
+  let h = `<div class="agarre"></div>`;
+  if(uno){
+    const meses = uno.meses_sin_comprar;
+    h += `<h2>${esc(uno.cliente_nombre)}</h2>
+      <p class="ficha">
+        <b>${esc(uno.cliente_codigo)}</b> · ${esc(uno.subcanal || "sin subcanal")}<br>
+        ${esc(uno.direccion || "")}<br>
+        ${esc(uno.estado)}${meses !== null && meses !== undefined
+            ? ` · ${meses === 0 ? "no compró el mes pasado" : meses + " meses sin comprar"}` : ""}
+      </p>`;
+  }else{
+    h += `<h2>${cs.length} clientes</h2>
+          <p class="ficha">El motivo se aplica a todos los que marcaste.</p>`;
+  }
+
+  if(ant && !uno.motivo_id){
+    h += `<button class="repetir" onclick="elegir('${ant.id}')">
+      Sigue igual que el período pasado<span>${esc(ant.etiqueta)}</span></button>`;
+  }
+
+  h += `<div class="grilla">`;
+  datos.motivos.forEach(m => {
+    h += `<button class="motivo ${m.requiere_texto ? 'ancho' : ''}"
+                  aria-pressed="${uno && uno.motivo_id === m.id}"
+                  onclick="elegir('${m.id}')">${esc(m.etiqueta)}</button>`;
+  });
+  h += `</div>`;
+  if(uno && uno.motivo_id)
+    h += `<p class="ficha" style="margin:16px 0 0">Ya cargado. Tocá otro motivo si te equivocaste.</p>`;
+
+  panel.innerHTML = h;
+  telon.classList.add("abierto");
+  panel.classList.add("abierto");
+}
+
+function cerrarPanel(){
+  telon.classList.remove("abierto");
+  panel.classList.remove("abierto");
+  abierto = null;
+}
+telon.onclick = cerrarPanel;
+
+function elegir(id){
+  const m = motivo(id);
+  if(m.requiere_texto){ pedirTexto(m); return; }
+  confirmar(id, null);
+}
+
+function pedirTexto(m){
+  const uno = abierto.length === 1 ? abierto[0] : null;
+  panel.innerHTML = `<div class="agarre"></div>
+    <h2>${esc(m.etiqueta)}</h2>
+    <p class="ficha">Escribí en pocas palabras por qué no compró.</p>
+    <textarea id="txt" rows="3" maxlength="140"
+      placeholder="Ej: está de vacaciones hasta el 20">${esc(uno && uno.detalle || "")}</textarea>
+    <button class="guardar" id="ok" disabled>Guardar</button>
+    <button class="volver" onclick="abrirPanel(abierto)">Volver a los motivos</button>`;
+  const t = $("#txt"), ok = $("#ok");
+  const chequear = () => ok.disabled = t.value.trim().length < 3;
+  t.addEventListener("input", chequear);
+  ok.onclick = () => confirmar(m.id, t.value.trim());
+  chequear(); t.focus();
+}
+
+function confirmar(motivo_id, detalle){
+  encolar(abierto.map(c => ({cliente_codigo: c.cliente_codigo, motivo_id, detalle})));
+  cerrarPanel();
+  if(modoSeleccion) salirSeleccion();
+}
+
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+arrancar();
+</script>
+</body>
+</html>

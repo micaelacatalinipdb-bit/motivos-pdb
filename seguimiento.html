@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0E2A3A">
+<title>Seguimiento del relevamiento</title>
+<style>
+:root{
+  --navy:#0E2A3A; --teal:#0F7A78; --celeste:#3FA9DC; --ambar:#C8781A; --rojo:#B4462F;
+  --papel:#FFFFFF; --linea:#DCE3E7; --gris:#6B7C87; --fondo:#F2F5F6;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  background:var(--fondo);color:var(--navy);font-size:15px;line-height:1.4;
+  -webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+.num{font-variant-numeric:tabular-nums}
+.envoltorio{max-width:1080px;margin:0 auto;padding:0 20px 60px}
+
+header{background:var(--navy);color:#fff;padding:26px 0 22px;margin-bottom:26px}
+header .envoltorio{padding-bottom:0}
+h1{font-size:22px;font-weight:700;letter-spacing:-.02em;margin:0}
+.sub{font-size:13.5px;color:#9DB6C4;margin-top:5px}
+.controles{display:flex;gap:10px;align-items:center;margin-top:18px;flex-wrap:wrap}
+select,.boton{background:#1B435A;color:#fff;border-radius:8px;padding:9px 13px;
+  font-size:14px;font-weight:600;border:0}
+.boton:hover{background:#22536B}
+
+/* Cifras de arriba */
+.cifras{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:28px}
+.cifra{background:var(--papel);border:1px solid var(--linea);border-radius:12px;padding:16px 18px}
+.cifra b{display:block;font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.cifra span{font-size:13px;color:var(--gris)}
+.cifra.destacada b{color:var(--celeste)}
+
+h2{font-size:16px;font-weight:700;margin:0 0 12px;letter-spacing:-.01em}
+.bloque{background:var(--papel);border:1px solid var(--linea);border-radius:12px;
+  padding:6px 0;margin-bottom:28px;overflow:hidden}
+
+/* Tabla de vendedores */
+.equipo{padding:16px 18px 6px;font-size:13px;font-weight:700;color:var(--gris)}
+.reng{display:grid;grid-template-columns:1fr 92px 128px 96px;gap:12px;align-items:center;
+  padding:11px 18px;border-top:1px solid var(--linea)}
+.reng:first-of-type{border-top:0}
+.nom{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.frac{font-size:13.5px;color:var(--gris);text-align:right}
+.barra{height:9px;background:var(--fondo);border-radius:5px;overflow:hidden}
+.barra i{display:block;height:100%;border-radius:5px;background:var(--celeste)}
+.barra i.bajo{background:var(--rojo)} .barra i.medio{background:var(--ambar)}
+.barra i.alto{background:var(--teal)}
+.pct{font-weight:700;text-align:right}
+.cuando{grid-column:1/-1;font-size:12px;color:var(--gris);margin-top:-2px}
+
+/* Motivos y estados */
+.dos{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:760px){.dos{grid-template-columns:1fr}
+  .reng{grid-template-columns:1fr 78px 0 62px}.barra{display:none}}
+.mot{display:flex;align-items:center;gap:12px;padding:9px 18px;border-top:1px solid var(--linea)}
+.mot:first-of-type{border-top:0}
+.mot em{font-style:normal;flex:1;font-size:14px}
+.mot .val{font-weight:700;font-size:15px}
+.mot .prop{width:34px;font-size:12px;color:var(--gris);text-align:right}
+
+/* Comentarios */
+.coment{padding:12px 18px;border-top:1px solid var(--linea);font-size:14px}
+.coment:first-of-type{border-top:0}
+.coment b{font-weight:600}
+.coment i{font-style:normal;color:var(--gris);font-size:12.5px;display:block;margin-top:2px}
+
+.acceso{max-width:380px;margin:90px auto;background:var(--papel);border:1px solid var(--linea);
+  border-radius:14px;padding:30px}
+.acceso h1{color:var(--navy);font-size:20px;margin-bottom:6px}
+.acceso p{color:var(--gris);font-size:14px;margin:0 0 18px}
+.acceso input{width:100%;padding:13px;border:1.5px solid var(--linea);border-radius:9px;
+  font:inherit;font-size:16px;margin-bottom:12px}
+.acceso button{width:100%;padding:14px;border-radius:9px;background:var(--celeste);
+  color:#fff;font-weight:600;font-size:15px}
+.error{color:var(--rojo);font-size:13.5px;margin-top:10px}
+.cargando{padding:80px;text-align:center;color:var(--gris)}
+</style>
+</head>
+<body>
+<div id="app"><div class="cargando">Cargando</div></div>
+
+<script>
+/* ================================================================
+   CONFIGURACION - los mismos dos valores que en index.html
+   ================================================================ */
+const SUPABASE_URL = "https://TU-PROYECTO.supabase.co";
+const SUPABASE_KEY = "TU-CLAVE-ANON-PUBLICA";
+/* ============================================================== */
+
+const $ = s => document.querySelector(s);
+const app = $("#app");
+let clave = null, datos = null, periodoElegido = null;
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+async function rpc(fn, cuerpo){
+  const r = await fetch(SUPABASE_URL + "/rest/v1/rpc/" + fn, {
+    method:"POST",
+    headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,
+             "Authorization":"Bearer " + SUPABASE_KEY},
+    body: JSON.stringify(cuerpo)
+  });
+  if(!r.ok) throw new Error("http " + r.status);
+  return r.json();
+}
+
+function arrancar(){
+  clave = localStorage.getItem("mnc_clave_seg");
+  clave ? cargar() : pedirClave();
+}
+
+function pedirClave(msg){
+  app.innerHTML = `<div class="acceso">
+    <h1>Seguimiento del relevamiento</h1>
+    <p>Ingresá la clave para ver el avance.</p>
+    <input type="password" id="cl" placeholder="Clave" autocomplete="off">
+    <button id="ok">Entrar</button>
+    ${msg ? `<p class="error">${esc(msg)}</p>` : ""}
+  </div>`;
+  const i = $("#cl");
+  const entrar = () => {
+    clave = i.value.trim();
+    if(clave){ localStorage.setItem("mnc_clave_seg", clave); cargar(); }
+  };
+  $("#ok").onclick = entrar;
+  i.onkeydown = e => { if(e.key === "Enter") entrar(); };
+  i.focus();
+}
+
+async function cargar(){
+  try{
+    const d = await rpc("app_avance", {p_clave: clave, p_periodo: periodoElegido});
+    if(d.error === "clave_invalida"){
+      localStorage.removeItem("mnc_clave_seg");
+      pedirClave("Clave incorrecta."); return;
+    }
+    if(d.error === "sin_periodo"){
+      app.innerHTML = `<div class="cargando">Todavía no hay ningún período cargado.</div>`;
+      return;
+    }
+    datos = d;
+    pintar();
+  }catch(e){
+    app.innerHTML = `<div class="cargando">No pude conectarme. Revisá la conexión y recargá.</div>`;
+  }
+}
+
+function hace(iso){
+  if(!iso) return "sin cargar nada";
+  const min = Math.round((Date.now() - new Date(iso)) / 60000);
+  if(min < 2)    return "recién";
+  if(min < 60)   return `hace ${min} min`;
+  const hs = Math.round(min / 60);
+  if(hs < 24)    return `hace ${hs} h`;
+  const d = Math.round(hs / 24);
+  return d === 1 ? "ayer" : `hace ${d} días`;
+}
+
+const nivel = p => p >= 80 ? "alto" : p >= 40 ? "medio" : "bajo";
+
+function pintar(){
+  const vs = datos.vendedores;
+  const asignados = vs.reduce((a, v) => a + v.asignados, 0);
+  const cargados  = vs.reduce((a, v) => a + v.cargados, 0);
+  const pct = asignados ? Math.round(100 * cargados / asignados) : 0;
+  const sinEmpezar = vs.filter(v => v.cargados === 0).length;
+  const terminados = vs.filter(v => v.cargados === v.asignados && v.asignados > 0).length;
+
+  // Vendedores agrupados por supervisor
+  const equipos = {};
+  vs.forEach(v => (equipos[v.supervisor] = equipos[v.supervisor] || []).push(v));
+
+  let h = `<header><div class="envoltorio">
+    <h1>Seguimiento del relevamiento</h1>
+    <div class="sub">Motivos de no compra · período ${esc(datos.periodo)}
+      · actualizado ${new Date(datos.actualizado).toLocaleTimeString("es-AR",
+        {hour:"2-digit",minute:"2-digit"})}</div>
+    <div class="controles">
+      <select id="per">${(datos.periodos || []).slice().sort().reverse().map(p =>
+        `<option value="${esc(p)}" ${p === datos.periodo ? "selected" : ""}>${esc(p)}</option>`).join("")}</select>
+      <button class="boton" id="refrescar">Actualizar</button>
+      <button class="boton" id="salir">Salir</button>
+    </div>
+  </div></header><div class="envoltorio">
+
+  <div class="cifras">
+    <div class="cifra destacada"><b class="num">${pct}%</b><span>del relevamiento completo</span></div>
+    <div class="cifra"><b class="num">${cargados}</b><span>de ${asignados} clientes cargados</span></div>
+    <div class="cifra"><b class="num">${asignados - cargados}</b><span>todavía sin motivo</span></div>
+    <div class="cifra"><b class="num">${sinEmpezar}</b><span>${sinEmpezar === 1
+      ? "vendedor sin empezar" : "vendedores sin empezar"}</span></div>
+    <div class="cifra"><b class="num">${terminados}</b><span>${terminados === 1
+      ? "vendedor que terminó" : "vendedores que terminaron"}</span></div>
+  </div>
+
+  <h2>Avance por vendedor</h2>
+  <div class="bloque">`;
+
+  Object.keys(equipos).sort().forEach(sup => {
+    h += `<div class="equipo">${esc(sup)}</div>`;
+    equipos[sup].forEach(v => {
+      h += `<div class="reng">
+        <div>
+          <div class="nom">${esc(v.vendedor)}</div>
+          <div class="cuando">${esc(hace(v.ultima_carga))}</div>
+        </div>
+        <div class="frac num">${v.cargados}/${v.asignados}</div>
+        <div class="barra"><i class="${nivel(v.avance)}" style="width:${v.avance}%"></i></div>
+        <div class="pct num">${v.avance}%</div>
+      </div>`;
+    });
+  });
+
+  h += `</div><div class="dos">
+    <div><h2>Motivos cargados</h2><div class="bloque">`;
+  if(!datos.motivos.length){
+    h += `<div class="coment">Todavía no cargó nadie.</div>`;
+  }else{
+    const tope = Math.max(...datos.motivos.map(m => m.cantidad));
+    datos.motivos.forEach(m => {
+      h += `<div class="mot">
+        <em>${esc(m.motivo)}</em>
+        <div class="barra" style="width:110px"><i style="width:${100*m.cantidad/tope}%"></i></div>
+        <span class="val num">${m.cantidad}</span>
+        <span class="prop num">${Math.round(100*m.cantidad/cargados)}%</span>
+      </div>`;
+    });
+  }
+  h += `</div></div>
+    <div><h2>Avance por estado del cliente</h2><div class="bloque">`;
+  datos.estados.forEach(e => {
+    const p = e.asignados ? Math.round(100*e.cargados/e.asignados) : 0;
+    h += `<div class="mot">
+      <em>${esc(e.estado)}</em>
+      <div class="barra" style="width:110px"><i class="${nivel(p)}" style="width:${p}%"></i></div>
+      <span class="val num">${e.cargados}/${e.asignados}</span>
+    </div>`;
+  });
+  h += `</div></div></div>`;
+
+  if(datos.sueltos && datos.sueltos.length){
+    h += `<h2>Últimos comentarios en "Otro motivo"</h2><div class="bloque">`;
+    datos.sueltos.forEach(s => {
+      h += `<div class="coment">
+        <b>${esc(s.cliente)}</b> — ${esc(s.detalle)}
+        <i>${esc(s.vendedor)} · ${esc(hace(s.cuando))}</i></div>`;
+    });
+    h += `</div>`;
+  }
+
+  h += `</div>`;
+  app.innerHTML = h;
+
+  $("#refrescar").onclick = cargar;
+  $("#salir").onclick = () => { localStorage.removeItem("mnc_clave_seg"); pedirClave(); };
+  $("#per").onchange = e => { periodoElegido = e.target.value; cargar(); };
+}
+
+setInterval(() => { if(datos && !document.hidden) cargar(); }, 120000);
+arrancar();
+</script>
+</body>
+</html>
