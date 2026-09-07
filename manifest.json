@@ -1,0 +1,16 @@
+{
+  "name": "Motivos de no compra",
+  "short_name": "No compra",
+  "description": "Carga de motivos de no compra para vendedores de PDB",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0E2A3A",
+  "theme_color": "#0E2A3A",
+  "lang": "es-AR",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
